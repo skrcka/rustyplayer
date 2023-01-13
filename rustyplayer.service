@@ -1,4 +1,4 @@
-# /etc/systemd/system/controller.service
+# /etc/systemd/system/rustyplayer.service
 [Unit]
 Description=Controller service
 
@@ -7,7 +7,7 @@ After=syslog.target network-online.target
 
 [Service]
 Type=simple
-ExecStart=/home/skrcka/controller-rpi
+ExecStart=/usr/bin/rustyplayer
 Restart=on-failure
 RestartSec=10
 KillMode=process
