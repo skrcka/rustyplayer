@@ -3,8 +3,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct File {
+    pub id: u32,
     pub name: String,
     pub path: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Schedule {
+    pub id: u32,
+    pub fileId: u32,
+    pub schedule: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

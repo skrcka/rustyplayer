@@ -1,2 +1,11 @@
 #!/bin/bash
-cargo build --target armv7-unknown-linux-gnueabihf
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o xtrace
+
+readonly TARGET_ARCH=armv7-unknown-linux-gnueabihf
+readonly SOURCE_PATH=./target/${TARGET_ARCH}/release/hello-world
+
+cargo build --release --target=${TARGET_ARCH}
