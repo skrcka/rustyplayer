@@ -28,7 +28,6 @@ pub enum Status {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct State {
     pub files: Vec<File>,
-    pub pause: bool,
     pub status: Status,
 }
 
@@ -36,7 +35,6 @@ impl State {
     pub fn new() -> State {
         State {
             files: vec![],
-            pause: false,
             status: Status::Init,
         }
     }

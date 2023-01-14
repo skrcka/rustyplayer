@@ -1,6 +1,8 @@
 use std::convert::Infallible;
 
+use crate::StreamMutex;
 use warp::{self, http::StatusCode};
+use crate::models::Status;
 use crate::StateMutex;
 
 
@@ -14,8 +16,21 @@ pub async fn get_files(state: StateMutex) -> Result<impl warp::Reply, Infallible
     Ok(warp::reply::json(&*state))
 }
 
-pub async fn stop(state: StateMutex) -> Result<impl warp::Reply, Infallible> {
+pub async fn stop(state: StateMutex, stream_handle: StreamMutex) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
+    state.status = Status::Idle;
+    Ok(StatusCode::OK)
+}
+
+pub async fn pause(state: StateMutex, stream_handle: StreamMutex) -> Result<impl warp::Reply, Infallible> {
+    let mut state = state.lock().await;
+    state.status = Status::Paused;
+    Ok(StatusCode::OK)
+}
+
+pub async fn play(state: StateMutex, stream_handle: StreamMutex) -> Result<impl warp::Reply, Infallible> {
+    let mut state = state.lock().await;
+    state.status = Status::Paused;
     Ok(StatusCode::OK)
 }
 
@@ -61,12 +76,3 @@ pub async fn update_status(
     Ok(StatusCode::OK)
 }
 */
-
-pub async fn pause(
-    state: StateMutex,
-) -> Result<impl warp::Reply, Infallible> {
-    let mut state = state.lock().await;
-    state.pause = true;
-
-    Ok(StatusCode::OK)
-}

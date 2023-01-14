@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::{thread, fs};
 use std::sync::Arc;
+use rodio::OutputStreamHandle;
 use tokio::sync::Mutex;
 use tokio::time::{self, Duration};
 use warp::Filter;
@@ -17,28 +18,32 @@ mod models;
 
 
 pub type StateMutex = Arc<Mutex<models::State>>;
+pub type StreamMutex = Arc<Mutex<OutputStreamHandle>>;
 
 #[tokio::main]
 async fn main() {
     let sched = JobScheduler::new().await.unwrap();
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    //let stream_handle2= stream_handle.clone();
     
-    let jj = Job::new_repeated(Duration::from_secs(8), |_uuid, _l| {
-        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-        let file = BufReader::new(File::open("/home/skrcka/police_s.wav").unwrap());
-        let source = Decoder::new(file).unwrap();
-        stream_handle.play_raw(source.convert_samples()).unwrap();
-    }).unwrap();
-    sched.add(jj).await.unwrap();
-
     let state = models::State::new();
 
     let statepointer : StateMutex = Arc::new(Mutex::new(state));
+    let streammutex : StreamMutex = Arc::new(Mutex::new(stream_handle));
+
+    let stream_handle2= streammutex.lock().await.clone();
+    let jj = Job::new_repeated(Duration::from_secs(8), move |_uuid, _l| {
+        let file = BufReader::new(File::open("./resources/holy-shit.mp3").unwrap());
+        let source = Decoder::new(file).unwrap();
+        stream_handle2.play_raw(source.convert_samples()).unwrap();
+    }).unwrap();
+    sched.add(jj).await.unwrap();
 
     let cors = warp::cors()
         .allow_any_origin()
         .allow_headers(vec!["User-Agent", "content-type", "Sec-Fetch-Mode", "Referer", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Access-Control-Allow-Origin"])
         .allow_methods(vec!["POST", "GET"]);
-    let routes = routes::routes(statepointer.clone()).with(cors);
+    let routes = routes::routes(statepointer.clone(), streammutex.clone()).with(cors);
 
     sched.start().await.unwrap();
     warp::serve(routes)
