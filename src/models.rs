@@ -1,15 +1,19 @@
+use std::fmt::format;
 use serde::{Deserialize, Serialize};
 use tokio_cron_scheduler::Job;
 
+use crate::utils::load_media_files;
+use crate::utils::load_schedules;
+
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct File {
+pub struct MediaFile {
     pub id: u32,
     pub name: String,
     pub path: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum Activity {
     Active,
     Inactive,
@@ -41,7 +45,8 @@ pub enum Status {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct State {
-    pub files: Vec<File>,
+    pub files: Vec<MediaFile>,
+    pub schedules: Vec<Schedule>,
     pub status: Status,
 }
 
@@ -49,7 +54,26 @@ impl State {
     pub fn new() -> State {
         State {
             files: vec![],
+            schedules: vec![],
             status: Status::Init,
+        }
+    }
+
+    pub fn load() -> State {
+        State {
+            files: load_media_files(),
+            schedules: load_schedules(),
+            status: Status::Idle,
+        }
+    }
+}
+
+impl MediaFile {
+    pub fn new(id: u32, name: String) -> MediaFile {
+        MediaFile {
+            id: id,
+            name: name.clone(),
+            path: format!("media/{}", name),
         }
     }
 }
