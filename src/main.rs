@@ -22,13 +22,12 @@ pub type StreamMutex = Arc<Mutex<OutputStreamHandle>>;
 
 #[tokio::main]
 async fn main() {
+    let state = models::State::new();
+    let statepointer : StateMutex = Arc::new(Mutex::new(state));
+
     let sched = JobScheduler::new().await.unwrap();
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let stream= stream_handle.clone();
-    
-    let state = models::State::new();
-
-    let statepointer : StateMutex = Arc::new(Mutex::new(state));
     let streammutex : StreamMutex = Arc::new(Mutex::new(stream_handle));
 
     let jj = Job::new_repeated(Duration::from_secs(8), move |_uuid, _l| {
@@ -38,13 +37,13 @@ async fn main() {
     }).unwrap();
     sched.add(jj).await.unwrap();
 
+    sched.start().await.unwrap();
+
     let cors = warp::cors()
         .allow_any_origin()
         .allow_headers(vec!["User-Agent", "content-type", "Sec-Fetch-Mode", "Referer", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Access-Control-Allow-Origin"])
         .allow_methods(vec!["POST", "GET"]);
     let routes = routes::routes(statepointer.clone(), streammutex.clone()).with(cors);
-
-    sched.start().await.unwrap();
     warp::serve(routes)
         .run(([0, 0, 0, 0], 5000))
         .await;

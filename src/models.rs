@@ -10,10 +10,17 @@ pub struct File {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Activity {
+    Active,
+    Inactive,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Schedule {
     pub id: u32,
     pub file_id: u32,
     pub schedule: String,
+    pub activity: Activity,
 }
 
 pub struct ActiveSchedule {
