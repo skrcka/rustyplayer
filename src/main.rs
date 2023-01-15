@@ -24,18 +24,17 @@ pub type StreamMutex = Arc<Mutex<OutputStreamHandle>>;
 async fn main() {
     let sched = JobScheduler::new().await.unwrap();
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    //let stream_handle2= stream_handle.clone();
+    let stream= stream_handle.clone();
     
     let state = models::State::new();
 
     let statepointer : StateMutex = Arc::new(Mutex::new(state));
     let streammutex : StreamMutex = Arc::new(Mutex::new(stream_handle));
 
-    let stream_handle2= streammutex.lock().await.clone();
     let jj = Job::new_repeated(Duration::from_secs(8), move |_uuid, _l| {
         let file = BufReader::new(File::open("./resources/holy-shit.mp3").unwrap());
         let source = Decoder::new(file).unwrap();
-        stream_handle2.play_raw(source.convert_samples()).unwrap();
+        stream.play_raw(source.convert_samples()).unwrap();
     }).unwrap();
     sched.add(jj).await.unwrap();
 

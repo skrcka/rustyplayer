@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tokio_cron_scheduler::Job;
 
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -11,8 +12,14 @@ pub struct File {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Schedule {
     pub id: u32,
-    pub fileId: u32,
+    pub file_id: u32,
     pub schedule: String,
+}
+
+pub struct ActiveSchedule {
+    pub id: u32,
+    pub schedule_id: u32,
+    pub job: Job,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
