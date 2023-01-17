@@ -4,14 +4,6 @@ use rodio::{OutputStreamHandle, Decoder, Source};
 use crate::models::{MediaFile, Schedule};
 
 
-pub fn play_file(file: &MediaFile, stream: &OutputStreamHandle) {
-    //println!("Playing file: {}", file.path);
-    //io::stdout().flush().unwrap();
-    let file = BufReader::new(File::open(file.path.to_owned()).unwrap());
-    let source = Decoder::new(file).unwrap();
-    stream.play_raw(source.convert_samples()).unwrap();
-}
-
 pub fn write_media_files(files: &Vec<MediaFile>) {
     let mut file = File::create("resource/media.json").unwrap();
     serde_json::to_writer(file, files).unwrap();
