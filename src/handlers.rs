@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use crate::StreamMutex;
+use crate::PlayerMutex;
 use warp::{self, http::StatusCode};
 use crate::models::Status;
 use crate::StateMutex;
@@ -8,29 +8,36 @@ use crate::StateMutex;
 
 pub async fn get_status(state: StateMutex) -> Result<impl warp::Reply, Infallible> {
     let state = state.lock().await;
-    Ok(warp::reply::json(&*state))
+    Ok(warp::reply::json(&state.status))
 }
 
 pub async fn get_files(state: StateMutex) -> Result<impl warp::Reply, Infallible> {
     let state = state.lock().await;
-    Ok(warp::reply::json(&*state))
+    Ok(warp::reply::json(&state.files))
 }
 
-pub async fn stop(state: StateMutex, stream_handle: StreamMutex) -> Result<impl warp::Reply, Infallible> {
+pub async fn get_schedules(state: StateMutex) -> Result<impl warp::Reply, Infallible> {
+    let state = state.lock().await;
+    Ok(warp::reply::json(&state.schedules))
+}
+
+pub async fn stop(state: StateMutex, player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
     state.status = Status::Idle;
     Ok(StatusCode::OK)
 }
 
-pub async fn pause(state: StateMutex, stream_handle: StreamMutex) -> Result<impl warp::Reply, Infallible> {
+pub async fn pause(state: StateMutex, player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
     state.status = Status::Paused;
     Ok(StatusCode::OK)
 }
 
-pub async fn play(state: StateMutex, stream_handle: StreamMutex) -> Result<impl warp::Reply, Infallible> {
+pub async fn play(state: StateMutex, player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
-    state.status = Status::Paused;
+    let mut player = player.lock().await;
+    state.status = Status::Running;
+    player.play(&state.files[0].path.as_str());
     Ok(StatusCode::OK)
 }
 
