@@ -18,6 +18,7 @@ use player::Player;
 pub type StateMutex = Arc<Mutex<models::State>>;
 pub type PlayerMutex = Arc<Mutex<Player>>;
 
+
 #[tokio::main]
 async fn main() {
     let state = models::State::load();
