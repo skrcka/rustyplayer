@@ -1,36 +1,26 @@
-use std::fs::File;
-use std::io::{BufReader, Write, self};
-use std::{thread, fs};
 use std::sync::Arc;
-use rodio::OutputStreamHandle;
 use tokio::sync::Mutex;
-use tokio::time::{self, Duration};
 use warp::Filter;
-use std::time::{Instant};
-//use local_ip_address::local_ip;
-use tokio_cron_scheduler::{JobScheduler, JobToRun, Job};
-use chrono::prelude::*;
-use rodio::{Decoder, OutputStream, source::Source};
+use tokio_cron_scheduler::{JobScheduler, Job};
+use rodio::OutputStream;
 
 mod routes;
 mod handlers;
 mod models;
 mod utils;
 mod player;
+mod consts;
 
-use utils::load_media_files;
-use utils::load_schedules;
 use models::Activity;
 use models::ActiveSchedule;
 use player::Player;
-
 
 pub type StateMutex = Arc<Mutex<models::State>>;
 pub type PlayerMutex = Arc<Mutex<Player>>;
 
 #[tokio::main]
 async fn main() {
-    let mut state = models::State::load();
+    let state = models::State::load();
 
     let sched = JobScheduler::new().await.unwrap();
 
@@ -49,7 +39,7 @@ async fn main() {
             let media = mediafile.clone();
             tokio::spawn(async move {
                 let player = player.lock().await;
-                player.play(media.path.as_str());
+                player.play(&media);
             });
         }).unwrap();
         active_schedules.push(ActiveSchedule{id: 0, schedule_id: schedule.id, job: job.clone()});

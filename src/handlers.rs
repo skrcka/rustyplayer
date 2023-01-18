@@ -1,10 +1,18 @@
 use std::convert::Infallible;
+use futures::TryStreamExt;
+use warp::multipart::{FormData, Part};
+use warp::{self, http::StatusCode, Rejection, reject::Reject};
+use bytes::BufMut;
 
-use crate::PlayerMutex;
-use warp::{self, http::StatusCode};
 use crate::models::Status;
 use crate::StateMutex;
+use crate::PlayerMutex;
+use crate::utils::write_file;
 
+
+#[derive(Debug)]
+struct InvalidFile;
+impl Reject for InvalidFile {}
 
 pub async fn get_status(state: StateMutex) -> Result<impl warp::Reply, Infallible> {
     let state = state.lock().await;
@@ -23,63 +31,94 @@ pub async fn get_schedules(state: StateMutex) -> Result<impl warp::Reply, Infall
 
 pub async fn stop(state: StateMutex, player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
+    let player = player.lock().await;
+    player.stop();
     state.status = Status::Idle;
     Ok(StatusCode::OK)
 }
 
 pub async fn pause(state: StateMutex, player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
+    let player = player.lock().await;
+    player.pause();
     state.status = Status::Paused;
     Ok(StatusCode::OK)
 }
 
-pub async fn play(state: StateMutex, player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
+pub async fn play(
+    id: u32,
+    state: StateMutex, 
+    player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
-    let mut player = player.lock().await;
+    let player = player.lock().await;
     state.status = Status::Running;
-    player.play(&state.files[0].path.as_str());
+    player.play(state.get_media(id).unwrap());
     Ok(StatusCode::OK)
 }
 
-/*
-pub async fn update_status(
-    content: (i32, bool, f64, i32, f64, i32),
+pub async fn upload_files(
+    form: FormData,
     state: StateMutex,
-) -> Result<impl warp::Reply, Infallible> {
-    let mut state = state.lock().await;
-    let (mode, pull, volume, volume_unit, time_rate, time_rate_unit) = content;
-    if volume_unit == 0 {
-    }
-    else if volume_unit == 1 {
-        state.ml = volume / 1000.0;
-    }
-    else if volume_unit == 2 {
-        state.ml = volume / 1_000_000.0;
-    }
-    state.steps = (state.ml * state.steps_per_ml as f64) as i32;
-    if mode == 1 {
-        if time_rate_unit == 0 {
-            state.time_rate = time_rate;
+) -> Result<impl warp::Reply, Rejection> {
+    let parts: Vec<Part> = form.try_collect().await.map_err(|e| {
+        eprintln!("form error: {}", e);
+        warp::reject::reject()
+    }).unwrap();
+
+    for p in parts {
+        if p.name() == "file" {
+            let content_type = p.content_type();
+            let file_ending;
+            match content_type {
+                Some(file_type) => match file_type {
+                    "audio/mp3" => {
+                        file_ending = "mp3";
+                    }
+                    "audio/ogg" => {
+                        file_ending = "ogg";
+                    }
+                    v => {
+                        eprintln!("invalid file type found: {}", v);
+                        return Err(warp::reject::reject());
+                    }
+                },
+                None => {
+                    eprintln!("file type could not be determined");
+                    return Err(warp::reject::reject());
+                }
+            }
+
+            let filename = p.filename();
+            let file_name;
+            match filename {
+                Some(filename) => {
+                    file_name = filename.to_string();
+                },
+                None => {
+                    eprintln!("file name could not be determined");
+                    return Err(warp::reject::reject());
+                }
+            }
+            let file_name = file_name.strip_suffix(file_ending).unwrap();
+
+            let value = p
+                .stream()
+                .try_fold(Vec::new(), |mut vec, data| {
+                    vec.put(data);
+                    async move { Ok(vec) }
+                })
+                .await
+                .map_err(|e| {
+                    eprintln!("reading file error: {}", e);
+                    warp::reject::reject()
+                }).unwrap();
+
+            write_file(file_name, file_ending, &value).await;
+
+            let mut state = state.lock().await;
+            state.add_media(file_name.to_string());
         }
-        else if time_rate_unit == 1 {
-            state.time_rate = time_rate * 60.0;
-        }
     }
-    else if mode == 3 {
-        if time_rate_unit == 0 {
-            state.time_rate = time_rate;
-        }
-        else if time_rate_unit == 1 {
-            state.time_rate = time_rate / 1000.0;
-        }
-        else if time_rate_unit == 2 {
-            state.time_rate = time_rate / 1_000_000.0;
-        }
-    }
-    state.pull = pull;
-    state.mode = mode;
-    state.running = true;
 
     Ok(StatusCode::OK)
 }
-*/

@@ -7,6 +7,8 @@ use rodio::OutputStreamHandle;
 use rodio::Sink;
 use std::io::Write;
 
+use crate::models::MediaFile;
+
 pub struct Player {
     sink: Sink,
 }
@@ -18,7 +20,8 @@ impl Player {
         }
     }
 
-    pub fn play(&self, file: &str) {
+    pub fn play(&self, mediafile: &MediaFile) {
+        let file = mediafile.path.as_str();
         // print the file name
         println!("Playing: {}", file);
         std::io::stdout().flush().unwrap();

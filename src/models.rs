@@ -4,6 +4,9 @@ use tokio_cron_scheduler::Job;
 
 use crate::utils::load_media_files;
 use crate::utils::load_schedules;
+use crate::utils::write_media_files;
+use crate::utils::write_schedules;
+use crate::consts::MEDIA_PATH;
 
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -43,7 +46,7 @@ pub enum Status {
     Paused,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug)]
 pub struct State {
     pub files: Vec<MediaFile>,
     pub schedules: Vec<Schedule>,
@@ -66,6 +69,23 @@ impl State {
             status: Status::Idle,
         }
     }
+
+    fn save_media(&self) {
+        write_media_files(&self.files);
+    }
+
+    fn save_schedules(&self) {
+        write_schedules(&self.schedules);
+    }
+
+    pub fn get_media(&self, id: u32) -> Option<&MediaFile> {
+        self.files.iter().find(|f| f.id == id)
+    }
+
+    pub fn add_media(&mut self, name: String) {
+        self.files.push(MediaFile::new(self.files.len() as u32, name));
+        self.save_media();
+    }
 }
 
 impl MediaFile {
@@ -73,7 +93,7 @@ impl MediaFile {
         MediaFile {
             id: id,
             name: name.clone(),
-            path: format!("media/{}", name),
+            path: format!("{}{}", MEDIA_PATH, name),
         }
     }
 }
