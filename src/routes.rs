@@ -1,13 +1,12 @@
 use std::convert::Infallible;
-
-use crate::StateMutex;
-use crate::PlayerMutex;
-use crate::handlers;
-
 use warp::{
     Filter, Rejection, Reply, body,
     path, get, any, query, post, multipart::form
 };
+
+use crate::StateMutex;
+use crate::PlayerMutex;
+use crate::handlers;
 
 
 pub fn routes(

@@ -1,4 +1,3 @@
-use std::fmt::format;
 use serde::{Deserialize, Serialize};
 use tokio_cron_scheduler::Job;
 

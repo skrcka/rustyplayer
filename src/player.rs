@@ -1,5 +1,3 @@
-extern crate rodio;
-
 use std::fs::File;
 use std::path::Path;
 use rodio::Decoder;
@@ -8,6 +6,7 @@ use rodio::Sink;
 use std::io::Write;
 
 use crate::models::MediaFile;
+
 
 pub struct Player {
     sink: Sink,
