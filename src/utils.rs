@@ -39,11 +39,22 @@ pub fn load_schedules() -> Vec<Schedule> {
 }
 
 pub async fn write_file(file_name: &str, file_ending: &str, data: &Vec<u8>) {
-    let path = format!("{}{}.{}", MEDIA_PATH, file_name, file_ending);
-    println!("writing file {} to: {}", file_name, path);
+    let path = Path::new(".").join(MEDIA_PATH).join(file_name).with_extension(file_ending);
+    println!("writing file {} to: {}", file_name, path.display());
     tokio::fs::write(&path, data).await.map_err(|e| {
         eprint!("error writing file: {}", e);
         warp::reject::reject()
     }).unwrap();
     println!("created file: {}", file_name);
+}
+
+pub async fn remove_file(file_locator: &str) {
+    let path = Path::new(".").join(file_locator);
+    // delete file
+    println!("deleting file: {}", path.display());
+    tokio::fs::remove_file(&path).await.map_err(|e| {
+        eprint!("error deleting file: {}", e);
+        warp::reject::reject()
+    }).unwrap();
+    println!("deleted file: {}", file_locator);
 }

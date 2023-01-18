@@ -1,25 +1,53 @@
 use std::convert::Infallible;
+use std::io::Read;
+use hyper::StatusCode;
 use warp::{
-    Filter, Rejection, Reply, body,
-    path, get, any, query, post, multipart::form
+    Filter, Rejection, Reply, body, multipart::form,
+    path, get, any, query, post, delete,
 };
 
 use crate::StateMutex;
 use crate::PlayerMutex;
 use crate::handlers;
-
+use crate::consts::WEB_PATH;
 
 pub fn routes(
     state: StateMutex,
     player: PlayerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    get_status(state.clone())
+    serve_web()
+        .or(get_status(state.clone()))
         .or(get_schedules(state.clone()))
         .or(get_files(state.clone()))
         .or(upload_files(state.clone()))
+        .or(delete_file(state.clone()))
+        .or(download_file(state.clone()))
         .or(stop(state.clone(), player.clone()))
         .or(play(state.clone(), player.clone()))
         .or(pause(state.clone(), player.clone()))
+}
+
+fn serve_web() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    warp::path::end()
+        .and(get())
+        .and(warp::fs::dir(WEB_PATH)
+        .recover(handle_rejection))
+}
+
+async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
+    let (code, message) = if err.is_not_found() {
+        (StatusCode::NOT_FOUND, "Not Found".to_string())
+    } else if err.find::<warp::reject::PayloadTooLarge>().is_some() {
+        (StatusCode::BAD_REQUEST, "Payload too large".to_string())
+    } else {
+        eprintln!("unhandled error: {:?}", err);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal Server Error".to_string(),
+        )
+    };
+
+    Ok(warp::reply::with_status(message, code))
 }
 
 fn get_status(
@@ -59,6 +87,25 @@ fn upload_files(
         .and_then(handlers::upload_files)
 }
 
+fn delete_file(
+    state: StateMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path!("delete" / u32)
+        .and(get())
+        .and(with_state(state))
+        .and_then(handlers::delete_file)
+}
+
+fn download_file(
+    state: StateMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("download")
+        .and(get())
+        .and(query().map(|id: u32| id))
+        .and(with_state(state))
+        .and_then(handlers::download_file)
+}
+
 fn pause(
     state: StateMutex,
     player: PlayerMutex,
@@ -85,9 +132,8 @@ fn play(
     state: StateMutex,
     player: PlayerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    path("play")
+    path!("play" / u32)
         .and(get())
-        .and(query().map(|id: u32| id))
         .and(with_state(state))
         .and(with_stream(player))
         .and_then(handlers::play)

@@ -8,6 +8,7 @@ use crate::models::Status;
 use crate::StateMutex;
 use crate::PlayerMutex;
 use crate::utils::write_file;
+use crate::utils::remove_file;
 
 
 #[derive(Debug)]
@@ -121,4 +122,24 @@ pub async fn upload_files(
     }
 
     Ok(StatusCode::OK)
+}
+
+pub async fn delete_file(
+    id: u32,
+    state: StateMutex,
+) -> Result<impl warp::Reply, Rejection> {
+    let state = state.lock().await;
+    let file_locator = state.get_media(id).unwrap().path.clone();
+    remove_file(file_locator.as_str()).await;
+    Ok(StatusCode::OK)
+}
+
+pub async fn download_file(
+    id: u32,
+    state: StateMutex,
+) -> Result<impl warp::Reply, Rejection> {
+    let state = state.lock().await;
+    let file_path = state.get_media(id).unwrap().path.clone();
+    Ok(StatusCode::OK)
+    //Ok(warp::fs::file(file_path))
 }
