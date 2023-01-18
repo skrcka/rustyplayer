@@ -13,7 +13,7 @@ use warp::{
 pub fn routes(
     state: StateMutex,
     player: PlayerMutex,
-) -> impl Filter<Extract = impl Reply, Error = Rejection> + Clone {
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     get_status(state.clone())
         .or(get_schedules(state.clone()))
         .or(get_files(state.clone()))
