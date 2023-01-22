@@ -17,6 +17,8 @@ use player::Player;
 
 pub type StateMutex = Arc<Mutex<models::State>>;
 pub type PlayerMutex = Arc<Mutex<Player>>;
+pub type ScheduleMutex = Arc<Mutex<Vec<ActiveSchedule>>>;
+pub type SchedulerMutex = Arc<Mutex<JobScheduler>>;
 
 
 #[tokio::main]
@@ -28,8 +30,10 @@ async fn main() {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let player: Player = Player::new(&stream_handle);
     let playermutex : PlayerMutex = Arc::new(Mutex::new(player));
+    let active_schedules: Vec<ActiveSchedule> = Vec::new();
+    let scheduler_mutex: SchedulerMutex = Arc::new(Mutex::new(sched));
+    let schedule_mutex: ScheduleMutex= Arc::new(Mutex::new(active_schedules));
 
-    let mut active_schedules: Vec<ActiveSchedule> = Vec::new();
     let media_files = state.files.clone();
     let schedules = state.schedules.clone();
     for schedule in schedules.iter().filter(move |s| s.activity == Activity::Active) {
@@ -43,7 +47,7 @@ async fn main() {
                 player.play(&media);
             });
         }).unwrap();
-        active_schedules.push(ActiveSchedule{id: 0, schedule_id: schedule.id, job: job.clone()});
+        schedule_mutex.lock().await.push(ActiveSchedule{id: 0, schedule_id: schedule.id, job: job.clone()});
         sched.add(job).await.unwrap();
     }
 
@@ -55,7 +59,11 @@ async fn main() {
         .allow_any_origin()
         .allow_headers(vec!["User-Agent", "content-type", "Sec-Fetch-Mode", "Referer", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Access-Control-Allow-Origin"])
         .allow_methods(vec!["POST", "GET"]);
-    let routes = routes::routes(statepointer.clone(), playermutex.clone()).with(cors);
+    let routes = routes::routes(statepointer.clone(),
+                                                                                         playermutex.clone(), 
+                                                                                         schedule_mutex.clone(),
+                                                                                         scheduler_mutex.clone(),
+                                                                                        ).with(cors);
     warp::serve(routes)
         .run(([0, 0, 0, 0], 5000))
         .await;

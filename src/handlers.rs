@@ -4,8 +4,8 @@ use warp::multipart::{FormData, Part};
 use warp::{self, http::StatusCode, Rejection, reject::Reject};
 use bytes::BufMut;
 
-use crate::models::Status;
-use crate::StateMutex;
+use crate::models::{Status, Activity, Schedule};
+use crate::{StateMutex, ScheduleMutex, SchedulerMutex};
 use crate::PlayerMutex;
 use crate::utils::write_file;
 use crate::utils::remove_file;
@@ -127,10 +127,24 @@ pub async fn upload_files(
 pub async fn delete_file(
     id: u32,
     state: StateMutex,
+    schedules: ScheduleMutex,
+    scheduler: SchedulerMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    let state = state.lock().await;
+    let mut state = state.lock().await;
+    let mut schedules = schedules.lock().await;
     let file_locator = state.get_media(id).unwrap().path.clone();
     remove_file(file_locator.as_str()).await;
+    state.remove_media(id);
+    let schedules_to_disable = state.schedules.iter()
+                                                .filter(|s| s.activity == Activity::Active)
+                                                .filter(|s| s.file_id == id)
+                                                .collect::<Vec<&Schedule>>();
+    for s in schedules_to_disable.iter_mut() {
+        let j = schedules.iter().find(|x| x.schedule_id == s.id).unwrap();
+        scheduler.lock().await.remove(&j.job.guid());
+        schedules.retain(|&x| x.id != j.id);
+        s.activity = Activity::Inactive;
+    }
     Ok(StatusCode::OK)
 }
 

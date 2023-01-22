@@ -85,6 +85,15 @@ impl State {
         self.files.push(MediaFile::new(self.files.len() as u32, name));
         self.save_media();
     }
+
+    pub fn remove_media(&mut self, id: u32) {
+        self.files.retain(|f| f.id != id);
+        self.save_media();
+    }
+
+    pub fn get_schedule(&self, id: u32) -> Option<&Schedule> {
+        self.schedules.iter().find(|s| s.id == id)
+    }
 }
 
 impl MediaFile {
