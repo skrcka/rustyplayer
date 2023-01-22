@@ -30,7 +30,6 @@ pub struct Schedule {
 }
 
 pub struct ActiveSchedule {
-    pub id: u32,
     pub schedule_id: u32,
     pub job: Job,
 }

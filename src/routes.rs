@@ -8,7 +8,6 @@ use warp::{
 
 use crate::StateMutex;
 use crate::PlayerMutex;
-use crate::ScheduleMutex;
 use crate::SchedulerMutex;
 use crate::handlers;
 use crate::consts::WEB_PATH;
@@ -16,7 +15,6 @@ use crate::consts::WEB_PATH;
 pub fn routes(
     state: StateMutex,
     player: PlayerMutex,
-    schedules: ScheduleMutex,
     scheduler: SchedulerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     serve_web()
@@ -24,7 +22,7 @@ pub fn routes(
         .or(get_schedules(state.clone()))
         .or(get_files(state.clone()))
         .or(upload_files(state.clone()))
-        .or(delete_file(state.clone()))
+        .or(delete_file(state.clone(), scheduler.clone()))
         .or(download_file(state.clone()))
         .or(stop(state.clone(), player.clone()))
         .or(play(state.clone(), player.clone()))
@@ -93,13 +91,11 @@ fn upload_files(
 
 fn delete_file(
     state: StateMutex,
-    schedules: ScheduleMutex,
     scheduler: SchedulerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     path!("delete" / u32)
         .and(get())
         .and(with_state(state))
-        .and(with_schedules(schedules))
         .and(with_scheduler(scheduler))
         .and_then(handlers::delete_file)
 }
@@ -149,10 +145,6 @@ fn play(
 
 fn with_state(state: StateMutex) -> impl Filter<Extract = (StateMutex,), Error = Infallible> + Clone {
     any().map(move || state.clone())
-}
-
-fn with_schedules(schedules: ScheduleMutex) -> impl Filter<Extract = (ScheduleMutex,), Error = Infallible> + Clone {
-    any().map(move || schedules.clone())
 }
 
 fn with_scheduler(scheduler: SchedulerMutex) -> impl Filter<Extract = (SchedulerMutex,), Error = Infallible> + Clone {
