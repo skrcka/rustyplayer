@@ -19,6 +19,8 @@ pub type PlayerMutex = Arc<Mutex<Player>>;
 pub type SchedulerMutex = Arc<Mutex<Scheduler>>;
 
 
+const PORT: u16 = 5000;
+
 #[tokio::main]
 async fn main() {
     let state = models::State::load();
@@ -40,7 +42,10 @@ async fn main() {
                                                                                          playermutex.clone(),
                                                                                          scheduler_mutex.clone(),
                                                                                         ).with(cors);
+
+    println!("Starting server on port {}", PORT);
     warp::serve(routes)
-        .run(([0, 0, 0, 0], 5000))
+        .run(([0, 0, 0, 0], PORT))
         .await;
+    println!("http://127.0.0.1:{}/", PORT);
 }

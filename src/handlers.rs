@@ -49,7 +49,8 @@ pub async fn pause(state: StateMutex, player: PlayerMutex) -> Result<impl warp::
 pub async fn play(
     id: u32,
     state: StateMutex, 
-    player: PlayerMutex) -> Result<impl warp::Reply, Infallible> {
+    player: PlayerMutex
+) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
     let player = player.lock().await;
     state.status = Status::Running;

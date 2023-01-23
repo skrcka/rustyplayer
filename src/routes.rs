@@ -1,5 +1,5 @@
+use std::collections::HashMap;
 use std::convert::Infallible;
-use std::io::Read;
 use hyper::StatusCode;
 use warp::{
     Filter, Rejection, Reply, body, multipart::form,
@@ -136,8 +136,9 @@ fn play(
     state: StateMutex,
     player: PlayerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    path!("play" / u32)
+    path("play")
         .and(get())
+        .and(with_id())
         .and(with_state(state))
         .and(with_stream(player))
         .and_then(handlers::play)
@@ -153,6 +154,27 @@ fn with_scheduler(scheduler: SchedulerMutex) -> impl Filter<Extract = (Scheduler
 
 fn with_stream(player: PlayerMutex) -> impl Filter<Extract = (PlayerMutex,), Error = Infallible> + Clone {
     any().map(move || player.clone())
+}
+
+fn with_id() -> impl Filter<Extract = (u32,), Error = Rejection> + Clone {
+    warp::query::<HashMap<String, String>>()
+        .map(| query: HashMap<String, String> | {
+            if let Some(id) = query.get("id") {
+                match id.parse::<u32>() {
+                    Ok(id) => Ok(id),
+                    Err(_) => Err(warp::reject()),
+                }
+            }
+            else {
+                Err(warp::reject())
+            }
+        })
+        .and_then(|id: Result<u32, Rejection>| async move {
+            match id {
+                Ok(id) => Ok(id),
+                Err(_) => Err(warp::reject()),
+            }
+        })
 }
 
 fn json_body() -> impl Filter<Extract = ((i32, bool, f64, i32, f64, i32),), Error = Rejection> + Clone {
