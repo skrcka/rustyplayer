@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 use futures::TryStreamExt;
+use hyper::Uri;
 use warp::multipart::{FormData, Part};
 use warp::{self, http::StatusCode, Rejection, reject::Reject};
 use bytes::BufMut;
@@ -150,7 +151,9 @@ pub async fn download_file(
     state: StateMutex,
 ) -> Result<impl warp::Reply, Rejection> {
     let state = state.lock().await;
-    let file_path = state.get_media(id).unwrap().path.clone();
-    Ok(StatusCode::OK)
-    //Ok(warp::fs::file(file_path))
+    let file_name = state.get_media(id).unwrap().name.clone();
+    println!("redirrecting to download file: {}", file_name);
+    let url = format!("/export/{}", file_name);
+    let uri = url.parse::<Uri>().expect("valid URI");
+    Ok(warp::redirect(uri))
 }

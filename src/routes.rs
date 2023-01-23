@@ -11,6 +11,8 @@ use crate::PlayerMutex;
 use crate::SchedulerMutex;
 use crate::handlers;
 use crate::consts::WEB_PATH;
+use crate::consts::MEDIA_PATH;
+
 
 pub fn routes(
     state: StateMutex,
@@ -18,6 +20,7 @@ pub fn routes(
     scheduler: SchedulerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     serve_web()
+        .or(serve_files())
         .or(get_status(state.clone()))
         .or(get_schedules(state.clone()))
         .or(get_files(state.clone()))
@@ -36,7 +39,15 @@ fn serve_web() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clon
         .recover(handle_rejection))
 }
 
+fn serve_files() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("export")
+        .and(get())
+        .and(warp::fs::dir(MEDIA_PATH)
+        .recover(handle_rejection))
+}
+
 async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
+    println!("Rejection: {:?}", err);
     let (code, message) = if err.is_not_found() {
         (StatusCode::NOT_FOUND, "Not Found".to_string())
     } else if err.find::<warp::reject::PayloadTooLarge>().is_some() {
