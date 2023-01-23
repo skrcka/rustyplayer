@@ -157,3 +157,31 @@ pub async fn download_file(
     let uri = url.parse::<Uri>().expect("valid URI");
     Ok(warp::redirect(uri))
 }
+
+pub async fn add_schedule(
+    content: (u32, String),
+    state: StateMutex,
+) -> Result<impl warp::Reply, Rejection> {
+    let (file_id, schedule) = content;
+    let mut state = state.lock().await;
+    state.add_schedule(file_id, schedule);
+    Ok(StatusCode::OK)
+}
+
+pub async fn activate(
+    id: u32,
+    scheduler: SchedulerMutex,
+) -> Result<impl warp::Reply, Rejection> {
+    let mut scheduler = scheduler.lock().await;
+    scheduler.add(id).await;
+    Ok(StatusCode::OK)
+}
+
+pub async fn deactivate(
+    id: u32,
+    scheduler: SchedulerMutex,
+) -> Result<impl warp::Reply, Rejection> {
+    let mut scheduler = scheduler.lock().await;
+    scheduler.remove(id).await;
+    Ok(StatusCode::OK)
+}

@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use hyper::StatusCode;
 use warp::{
     Filter, Rejection, Reply, body, multipart::form,
-    path, get, any, query, post, delete,
+    path, get, any, post, 
 };
 
 use crate::StateMutex;
@@ -30,6 +30,9 @@ pub fn routes(
         .or(stop(state.clone(), player.clone()))
         .or(play(state.clone(), player.clone()))
         .or(pause(state.clone(), player.clone()))
+        .or(add_schedule(state.clone()))
+        .or(activate(state.clone(), scheduler.clone()))
+        .or(deactivate(scheduler.clone()))
 }
 
 fn serve_web() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
@@ -156,6 +159,37 @@ fn play(
         .and_then(handlers::play)
 }
 
+fn add_schedule(
+    state: StateMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("schedule")
+        .and(post())
+        .and(json_schedule())
+        .and(with_state(state))
+        .and_then(handlers::add_schedule)
+}
+
+fn activate(
+    state: StateMutex,
+    scheduler: SchedulerMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("activate")
+        .and(get())
+        .and(with_id())
+        .and(with_scheduler(scheduler))
+        .and_then(handlers::activate)
+}
+
+fn deactivate(
+    scheduler: SchedulerMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("deactivate")
+        .and(get())
+        .and(with_id())
+        .and(with_scheduler(scheduler))
+        .and_then(handlers::deactivate)
+}
+
 fn with_state(state: StateMutex) -> impl Filter<Extract = (StateMutex,), Error = Infallible> + Clone {
     any().map(move || state.clone())
 }
@@ -189,7 +223,7 @@ fn with_id() -> impl Filter<Extract = (u32,), Error = Rejection> + Clone {
         })
 }
 
-fn json_body() -> impl Filter<Extract = ((i32, bool, f64, i32, f64, i32),), Error = Rejection> + Clone {
+fn json_schedule() -> impl Filter<Extract = ((u32, String),), Error = Rejection> + Clone {
     body::content_length_limit(1024 * 16)
     .and(body::json())
 }

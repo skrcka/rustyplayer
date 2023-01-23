@@ -22,10 +22,12 @@ impl Scheduler {
         }
     }
 
-    pub async fn add(&mut self, schedule: Schedule) {
-        println!("Adding schedule: {:?} as active", schedule);
+    pub async fn add(&mut self, schedule_id: u32) {
+        println!("Adding schedule: {} as active", schedule_id);
         let player = self.player.clone();
         let state = self.state.lock().await;
+        let schedule = state.get_schedule(schedule_id).unwrap().clone();
+
         let media = state.get_media(schedule.file_id).unwrap().clone();
         let job = Job::new(schedule.schedule.as_str(), move |_uuid, _l| {
             println!("Triggered schedule: {}", schedule.id);
@@ -36,6 +38,9 @@ impl Scheduler {
                 player.play(&media);
             });
         }).unwrap();
+        
+        let mut state = self.state.lock().await;
+        state.schedules.iter_mut().find(|s| s.id == schedule_id).unwrap().activity = Activity::Active;
         self.active_schedules.push(ActiveSchedule{schedule_id: schedule.id, job: job.clone()});
         self.scheduler.add(job).await.unwrap();
     }
@@ -51,7 +56,7 @@ impl Scheduler {
         println!("Loading schedules");
         let state = self.state.lock().await.clone();
         for schedule in state.schedules.iter().filter(move |s| s.activity == Activity::Active) {
-            self.add(schedule.clone()).await;
+            self.add(schedule.id).await;
         }
     }
 

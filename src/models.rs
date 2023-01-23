@@ -29,6 +29,17 @@ pub struct Schedule {
     pub activity: Activity,
 }
 
+impl Schedule {
+    pub fn new(id: u32, file_id: u32, schedule: String) -> Schedule {
+        Schedule {
+            id,
+            file_id,
+            schedule,
+            activity: Activity::Inactive,
+        }
+    }
+}
+
 pub struct ActiveSchedule {
     pub schedule_id: u32,
     pub job: Job,
@@ -92,6 +103,24 @@ impl State {
 
     pub fn get_schedule(&self, id: u32) -> Option<&Schedule> {
         self.schedules.iter().find(|s| s.id == id)
+    }
+
+    pub fn get_mut_schedule(&mut self, id: u32) -> Option<&mut Schedule> {
+        self.schedules.iter_mut().find(|s| s.id == id)
+    }
+
+    pub fn add_schedule(&mut self, file_id: u32, schedule: String) {
+        self.schedules.push(Schedule::new(
+            self.schedules.len() as u32,
+            file_id,
+            schedule,
+        ));
+        self.save_schedules();
+    }
+
+    pub fn remove_schedule(&mut self, id: u32) {
+        self.schedules.retain(|s| s.id != id);
+        self.save_schedules();
     }
 }
 
