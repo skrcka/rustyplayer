@@ -93,8 +93,9 @@ fn delete_file(
     state: StateMutex,
     scheduler: SchedulerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    path!("delete" / u32)
+    path!("delete")
         .and(get())
+        .and(with_id())
         .and(with_state(state))
         .and(with_scheduler(scheduler))
         .and_then(handlers::delete_file)
@@ -105,7 +106,7 @@ fn download_file(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     path("download")
         .and(get())
-        .and(query().map(|id: u32| id))
+        .and(with_id())
         .and(with_state(state))
         .and_then(handlers::download_file)
 }

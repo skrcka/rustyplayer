@@ -44,8 +44,8 @@ async fn main() {
                                                                                         ).with(cors);
 
     println!("Starting server on port {}", PORT);
+    println!("http://127.0.0.1:{}/", PORT);
     warp::serve(routes)
         .run(([0, 0, 0, 0], PORT))
         .await;
-    println!("http://127.0.0.1:{}/", PORT);
 }
