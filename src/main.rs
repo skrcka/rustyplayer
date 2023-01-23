@@ -29,6 +29,7 @@ async fn main() {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let player: Player = Player::new(&stream_handle);
     let playermutex : PlayerMutex = Arc::new(Mutex::new(player));
+    
     let mut scheduler = Scheduler::new(playermutex.clone(), statemutex.clone()).await;
     scheduler.load().await;
     scheduler.start().await;
