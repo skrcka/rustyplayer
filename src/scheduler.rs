@@ -41,12 +41,14 @@ impl Scheduler {
     }
 
     pub async fn remove(&mut self, id: u32) {
+        println!("Removing schedule: {} from active", id);
         let active_schedule = self.active_schedules.iter().find(|s| s.schedule_id == id).unwrap();
         self.scheduler.remove(&active_schedule.job.guid()).await.unwrap();
         self.active_schedules.retain(|s| s.schedule_id != id);
         self.state.lock().await.schedules.iter_mut().find(|s| s.id == id).unwrap().activity = Activity::Inactive;
     } 
     pub async fn load(&mut self) {
+        println!("Loading schedules");
         let state = self.state.lock().await.clone();
         for schedule in state.schedules.iter().filter(move |s| s.activity == Activity::Active) {
             self.add(schedule.clone()).await;
