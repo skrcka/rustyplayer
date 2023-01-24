@@ -13,7 +13,10 @@ pub struct Scheduler {
 }
 
 impl Scheduler {
-    pub async fn new(player: PlayerMutex, state: StateMutex) -> Scheduler {
+    pub async fn new(
+        player: PlayerMutex, 
+        state: StateMutex
+    ) -> Scheduler {
         Scheduler {
             scheduler: JobScheduler::new().await.unwrap(),
             active_schedules: vec![],
@@ -23,32 +26,35 @@ impl Scheduler {
     }
 
     pub async fn add(&mut self, schedule_id: u32) {
-        println!("Adding schedule: {} as active", schedule_id);
-        let player = self.player.clone();
         let state = self.state.lock().await;
         let schedule = state.get_schedule(schedule_id).unwrap().clone();
 
+        let player = self.player.clone();
         let media = state.get_media(schedule.file_id).unwrap().clone();
-        let job = Job::new(schedule.schedule.as_str(), move |_uuid, _l| {
-            println!("Triggered schedule: {}", schedule.id);
+        let job = Job::new_async(schedule.schedule.as_str(), move |_uuid, _l| {
             let player = player.clone();
             let media = media.clone();
-            tokio::spawn(async move {
+            Box::pin(async move {
+                println!("Triggered schedule: {}", schedule.id);
+                let media = media.clone();
                 let player = player.lock().await;
                 player.play(&media);
-            });
+            })
         }).unwrap();
-        
-        let mut state = self.state.lock().await;
-        state.schedules.iter_mut().find(|s| s.id == schedule_id).unwrap().activity = Activity::Active;
         self.active_schedules.push(ActiveSchedule{schedule_id: schedule.id, job: job.clone()});
         self.scheduler.add(job).await.unwrap();
+
+        drop(state);
+        let mut state = self.state.lock().await;
+        state.schedules.iter_mut().find(|s| s.id == schedule_id).unwrap().activity = Activity::Active;
+        println!("Added schedule: {} as active", schedule_id)
     }
 
     pub async fn remove(&mut self, id: u32) {
         println!("Removing schedule: {} from active", id);
         let active_schedule = self.active_schedules.iter().find(|s| s.schedule_id == id).unwrap();
         self.scheduler.remove(&active_schedule.job.guid()).await.unwrap();
+        println!("Removed schedule: {} from active", id);
         self.active_schedules.retain(|s| s.schedule_id != id);
         self.state.lock().await.schedules.iter_mut().find(|s| s.id == id).unwrap().activity = Activity::Inactive;
     } 
