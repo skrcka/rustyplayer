@@ -1297,6 +1297,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-cron-scheduler",
+ "uuid",
  "warp",
 ]
 

@@ -41,7 +41,7 @@ impl Scheduler {
                 player.play(&media);
             })
         }).unwrap();
-        self.active_schedules.push(ActiveSchedule{schedule_id: schedule.id, job: job.clone()});
+        self.active_schedules.push(ActiveSchedule{schedule_id: schedule.id, job_id: job.guid()});
         self.scheduler.add(job).await.unwrap();
 
         drop(state);
@@ -53,7 +53,7 @@ impl Scheduler {
     pub async fn remove(&mut self, id: u32) {
         println!("Removing schedule: {} from active", id);
         let active_schedule = self.active_schedules.iter().find(|s| s.schedule_id == id).unwrap();
-        self.scheduler.remove(&active_schedule.job.guid()).await.unwrap();
+        self.scheduler.remove(&active_schedule.job_id).await.unwrap();
         println!("Removed schedule: {} from active", id);
         self.active_schedules.retain(|s| s.schedule_id != id);
         self.state.lock().await.schedules.iter_mut().find(|s| s.id == id).unwrap().activity = Activity::Inactive;
@@ -69,5 +69,10 @@ impl Scheduler {
     pub async fn start(&mut self) {
         println!("Starting scheduler");
         self.scheduler.start().await.unwrap();
+    }
+
+    pub async fn stop(&mut self) {
+        println!("Stopping scheduler");
+        self.scheduler.shutdown().await.unwrap();
     }
 }

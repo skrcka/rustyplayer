@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use tokio_cron_scheduler::Job;
+use uuid::Uuid;
 
 use crate::utils::load_media_files;
 use crate::utils::load_schedules;
@@ -42,7 +43,7 @@ impl Schedule {
 
 pub struct ActiveSchedule {
     pub schedule_id: u32,
-    pub job: Job,
+    pub job_id: Uuid,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
