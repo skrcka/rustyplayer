@@ -31,7 +31,7 @@ pub fn routes(
         .or(play(state.clone(), player.clone()))
         .or(pause(state.clone(), player.clone()))
         .or(add_schedule(state.clone()))
-        .or(activate(state.clone(), scheduler.clone()))
+        .or(activate(scheduler.clone()))
         .or(deactivate(scheduler.clone()))
 }
 
@@ -170,7 +170,6 @@ fn add_schedule(
 }
 
 fn activate(
-    state: StateMutex,
     scheduler: SchedulerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     path("activate")

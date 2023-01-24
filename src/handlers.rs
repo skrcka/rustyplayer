@@ -6,7 +6,7 @@ use warp::{self, http::StatusCode, Rejection, reject::Reject};
 use bytes::BufMut;
 
 use crate::models::{Status, Activity, Schedule};
-use crate::{StateMutex, SchedulerMutex};
+use crate::{StateMutex, SchedulerMutex, scheduler};
 use crate::PlayerMutex;
 use crate::utils::write_file;
 use crate::utils::remove_file;
@@ -172,8 +172,11 @@ pub async fn activate(
     id: u32,
     scheduler: SchedulerMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    let mut scheduler = scheduler.lock().await;
-    scheduler.add(id).await;
+    let scheduler = scheduler.clone();
+    tokio::spawn(async move {
+        let mut scheduler = scheduler.lock().await;
+        scheduler.add(id).await;
+    });
     Ok(StatusCode::OK)
 }
 
@@ -181,7 +184,10 @@ pub async fn deactivate(
     id: u32,
     scheduler: SchedulerMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    let mut scheduler = scheduler.lock().await;
-    scheduler.remove(id).await;
+    let scheduler = scheduler.clone();
+    tokio::spawn(async move {
+        let mut scheduler = scheduler.lock().await;
+        scheduler.remove(id).await;
+    });
     Ok(StatusCode::OK)
 }

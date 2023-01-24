@@ -21,7 +21,7 @@ pub type SchedulerMutex = Arc<Mutex<Scheduler>>;
 
 const PORT: u16 = 5000;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     let state = models::State::load();
     let statemutex : StateMutex = Arc::new(Mutex::new(state));
