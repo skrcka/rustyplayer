@@ -1,6 +1,6 @@
 use tokio_cron_scheduler::{JobScheduler, Job};
 
-use crate::models::{Status, Activity, Schedule, ActiveSchedule, State};
+use crate::models::{Activity, ActiveSchedule};
 use crate::PlayerMutex;
 use crate::StateMutex;
 

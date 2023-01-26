@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use tokio_cron_scheduler::Job;
 use uuid::Uuid;
 
 use crate::utils::load_media_files;
@@ -129,8 +128,8 @@ impl MediaFile {
     pub fn new(id: u32, name: String) -> MediaFile {
         MediaFile {
             id: id,
-            name: name.clone(),
             path: format!("{}{}", MEDIA_PATH, name),
+            name: name,
         }
     }
 }

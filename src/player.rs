@@ -3,7 +3,6 @@ use std::path::Path;
 use rodio::Decoder;
 use rodio::OutputStreamHandle;
 use rodio::Sink;
-use std::io::Write;
 
 use crate::models::MediaFile;
 
@@ -21,9 +20,7 @@ impl Player {
 
     pub fn play(&self, mediafile: &MediaFile) {
         let file = mediafile.path.as_str();
-        // print the file name
         println!("Playing: {}", file);
-        std::io::stdout().flush().unwrap();
         let file_path = Path::new(file);
         let file = File::open(file_path).unwrap();
         let source = Decoder::new(file).unwrap();

@@ -6,7 +6,7 @@ use warp::{self, http::StatusCode, Rejection, reject::Reject};
 use bytes::BufMut;
 
 use crate::models::{Status, Activity, Schedule};
-use crate::{StateMutex, SchedulerMutex, scheduler};
+use crate::{StateMutex, SchedulerMutex};
 use crate::PlayerMutex;
 use crate::utils::write_file;
 use crate::utils::remove_file;
