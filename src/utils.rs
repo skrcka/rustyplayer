@@ -7,14 +7,14 @@ use crate::consts::MEDIA_PATH;
 
 
 pub fn write_media_files(files: &Vec<MediaFile>) {
-    let path = Path::new(".").join(RESOURCE_PATH).join("media.json");
+    let path = Path::new(RESOURCE_PATH).join("media.json");
     print!("writing media files to: {}", path.display());
     let file = File::create(path).unwrap();
     serde_json::to_writer(file, files).unwrap();
 }
 
 pub fn load_media_files() -> Vec<MediaFile> {
-    let path = Path::new(".").join(RESOURCE_PATH).join("media.json");
+    let path = Path::new(RESOURCE_PATH).join("media.json");
     println!("loading media files from: {}", path.display());
     let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
@@ -23,14 +23,14 @@ pub fn load_media_files() -> Vec<MediaFile> {
 }
 
 pub fn write_schedules(schedules: &Vec<Schedule>) {
-    let path = Path::new(".").join(RESOURCE_PATH).join("schedules.json");
+    let path = Path::new(RESOURCE_PATH).join("schedules.json");
     println!("writing schedules to: {}", path.display());
     let file = File::create(path).unwrap();
     serde_json::to_writer(file, schedules).unwrap();
 }
 
 pub fn load_schedules() -> Vec<Schedule> {
-    let path = Path::new(".").join(RESOURCE_PATH).join("schedules.json");
+    let path = Path::new(RESOURCE_PATH).join("schedules.json");
     println!("loading schedules from: {}", path.display());
     let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
@@ -39,7 +39,7 @@ pub fn load_schedules() -> Vec<Schedule> {
 }
 
 pub async fn write_file(file_name: &str, file_ending: &str, data: &Vec<u8>) {
-    let path = Path::new(".").join(MEDIA_PATH).join(file_name).with_extension(file_ending);
+    let path = Path::new(MEDIA_PATH).join(file_name).with_extension(file_ending);
     println!("writing file {} to: {}", file_name, path.display());
     tokio::fs::write(&path, data).await.map_err(|e| {
         eprint!("error writing file: {}", e);
@@ -49,7 +49,7 @@ pub async fn write_file(file_name: &str, file_ending: &str, data: &Vec<u8>) {
 }
 
 pub async fn remove_file(file_locator: &str) {
-    let path = Path::new(".").join(file_locator);
+    let path = Path::new(file_locator);
     // delete file
     println!("deleting file: {}", path.display());
     tokio::fs::remove_file(&path).await.map_err(|e| {

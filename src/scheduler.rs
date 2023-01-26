@@ -47,7 +47,8 @@ impl Scheduler {
         drop(state);
         let mut state = self.state.lock().await;
         state.schedules.iter_mut().find(|s| s.id == schedule_id).unwrap().activity = Activity::Active;
-        println!("Added schedule: {} as active", schedule_id)
+        println!("Added schedule: {} as active", schedule_id);
+        state.save_schedules();
     }
 
     pub async fn remove(&mut self, id: u32) {
@@ -56,9 +57,11 @@ impl Scheduler {
         self.scheduler.remove(&active_schedule.job_id).await.unwrap();
         println!("Removed schedule: {} from active", id);
         self.active_schedules.retain(|s| s.schedule_id != id);
-        self.state.lock().await.schedules.iter_mut().find(|s| s.id == id).unwrap().activity = Activity::Inactive;
+        let mut state = self.state.lock().await;
+        state.schedules.iter_mut().find(|s| s.id == id).unwrap().activity = Activity::Inactive;
+        state.save_schedules();
     } 
-    
+
     pub async fn load(&mut self) {
         println!("Loading schedules");
         let schedules = self.state.lock().await.schedules.clone();

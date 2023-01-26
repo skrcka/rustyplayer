@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::utils::load_media_files;
@@ -109,7 +110,7 @@ impl State {
         write_media_files(&self.files);
     }
 
-    fn save_schedules(&self) {
+    pub fn save_schedules(&self) {
         write_schedules(&self.schedules);
     }
 
@@ -152,9 +153,10 @@ impl State {
 
 impl MediaFile {
     pub fn new(id: u32, name: String) -> MediaFile {
+        let path = Path::new(MEDIA_PATH).join(&id.to_string()).join(&name);
         MediaFile {
             id: id,
-            path: format!("{}{}", MEDIA_PATH, name),
+            path: path.to_string_lossy().to_string(),
             name: name,
         }
     }
