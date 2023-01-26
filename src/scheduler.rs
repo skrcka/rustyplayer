@@ -58,10 +58,11 @@ impl Scheduler {
         self.active_schedules.retain(|s| s.schedule_id != id);
         self.state.lock().await.schedules.iter_mut().find(|s| s.id == id).unwrap().activity = Activity::Inactive;
     } 
+    
     pub async fn load(&mut self) {
         println!("Loading schedules");
-        let state = self.state.lock().await.clone();
-        for schedule in state.schedules.iter().filter(move |s| s.activity == Activity::Active) {
+        let schedules = self.state.lock().await.schedules.clone();
+        for schedule in schedules.iter().filter(move |s| s.activity == Activity::Active) {
             self.add(schedule.id).await;
         }
     }

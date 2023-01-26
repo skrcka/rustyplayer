@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::utils::load_media_files;
 use crate::utils::load_schedules;
@@ -55,11 +56,30 @@ pub enum Status {
     Paused,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
+pub struct IdGenerator {
+    id: AtomicUsize,
+}
+
+impl IdGenerator {
+    pub fn new(start: u32) -> IdGenerator {
+        IdGenerator {
+            id: AtomicUsize::new(start as usize),
+        }
+    }
+
+    pub fn next(&self) -> u32 {
+        self.id.fetch_add(1, Ordering::SeqCst) as u32
+    }
+}
+
+#[derive(Debug)]
 pub struct State {
     pub files: Vec<MediaFile>,
     pub schedules: Vec<Schedule>,
     pub status: Status,
+    pub file_id_gen: IdGenerator,
+    pub schedule_id_gen: IdGenerator,
 }
 
 impl State {
@@ -68,13 +88,19 @@ impl State {
             files: vec![],
             schedules: vec![],
             status: Status::Init,
+            file_id_gen: IdGenerator::new(0),
+            schedule_id_gen: IdGenerator::new(0),
         }
     }
 
     pub fn load() -> State {
+        let files = load_media_files();
+        let schedules = load_schedules();
         State {
-            files: load_media_files(),
-            schedules: load_schedules(),
+            file_id_gen: IdGenerator::new(files.iter().map(|f| f.id).max().unwrap_or(0)),
+            schedule_id_gen: IdGenerator::new(schedules.iter().map(|s| s.id).max().unwrap_or(0)),
+            files: files,
+            schedules: schedules,
             status: Status::Idle,
         }
     }
@@ -92,7 +118,7 @@ impl State {
     }
 
     pub fn add_media(&mut self, name: String) {
-        self.files.push(MediaFile::new(self.files.len() as u32, name));
+        self.files.push(MediaFile::new(self.file_id_gen.next(), name));
         self.save_media();
     }
 
@@ -111,7 +137,7 @@ impl State {
 
     pub fn add_schedule(&mut self, file_id: u32, schedule: String) {
         self.schedules.push(Schedule::new(
-            self.schedules.len() as u32,
+            self.schedule_id_gen.next(),
             file_id,
             schedule,
         ));
