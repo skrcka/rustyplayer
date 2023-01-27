@@ -31,6 +31,8 @@ pub fn routes(
         .or(play(state.clone(), player.clone()))
         .or(pause(state.clone(), player.clone()))
         .or(add_schedule(state.clone()))
+        .or(edit_schedule(state.clone(), scheduler.clone()))
+        .or(remove_schedule(state.clone(), scheduler.clone()))
         .or(activate(scheduler.clone()))
         .or(deactivate(scheduler.clone()))
 }
@@ -159,6 +161,18 @@ fn play(
         .and_then(handlers::play)
 }
 
+fn edit_schedule(
+    state: StateMutex,
+    scheduler: SchedulerMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("reschedule")
+        .and(post())
+        .and(json_edit_schedule())
+        .and(with_state(state))
+        .and(with_scheduler(scheduler))
+        .and_then(handlers::edit_schedule)
+}
+
 fn add_schedule(
     state: StateMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
@@ -167,6 +181,18 @@ fn add_schedule(
         .and(json_schedule())
         .and(with_state(state))
         .and_then(handlers::add_schedule)
+}
+
+fn remove_schedule(
+    state: StateMutex,
+    scheduler: SchedulerMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("remove")
+        .and(get())
+        .and(with_id())
+        .and(with_state(state))
+        .and(with_scheduler(scheduler))
+        .and_then(handlers::remove_schedule)
 }
 
 fn activate(
@@ -223,6 +249,11 @@ fn with_id() -> impl Filter<Extract = (u32,), Error = Rejection> + Clone {
 }
 
 fn json_schedule() -> impl Filter<Extract = ((u32, String),), Error = Rejection> + Clone {
+    body::content_length_limit(1024 * 16)
+    .and(body::json())
+}
+
+fn json_edit_schedule() -> impl Filter<Extract = ((u32, u32, String),), Error = Rejection> + Clone {
     body::content_length_limit(1024 * 16)
     .and(body::json())
 }

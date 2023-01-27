@@ -145,6 +145,16 @@ impl State {
         self.save_schedules();
     }
 
+    pub fn edit_schedule(&mut self, id:u32, file_id: u32, schedule: String) {
+        let mut sched = self.get_mut_schedule(id).unwrap();
+        if file_id == sched.file_id && schedule == sched.schedule {
+            return;
+        }
+        sched.file_id = file_id;
+        sched.schedule = schedule;
+        self.save_schedules();
+    }
+
     pub fn remove_schedule(&mut self, id: u32) {
         self.schedules.retain(|s| s.id != id);
         self.save_schedules();

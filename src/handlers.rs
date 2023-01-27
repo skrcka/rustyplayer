@@ -80,6 +80,9 @@ pub async fn upload_files(
                     "audio/ogg" => {
                         file_ending = "ogg";
                     }
+                    "audio/mpeg" => {
+                        file_ending = "mp3";
+                    }
                     v => {
                         eprintln!("invalid file type found: {}", v);
                         return Err(warp::reject::reject());
@@ -165,6 +168,35 @@ pub async fn add_schedule(
     let (file_id, schedule) = content;
     let mut state = state.lock().await;
     state.add_schedule(file_id, schedule);
+    Ok(StatusCode::OK)
+}
+
+pub async fn edit_schedule(
+    content: (u32, u32, String),
+    state: StateMutex,
+    scheduler: SchedulerMutex,
+) -> Result<impl warp::Reply, Rejection> {
+    let (id, file_id, schedule) = content;
+    let mut state = state.lock().await;
+    state.edit_schedule(id, file_id, schedule);
+    if state.get_schedule(id).unwrap().activity == Activity::Active {
+        let mut scheduler = scheduler.lock().await;
+        scheduler.reschedule(id).await;
+    }
+    Ok(StatusCode::OK)
+}
+
+pub async fn remove_schedule(
+    id: u32,
+    state: StateMutex,
+    scheduler: SchedulerMutex,
+) -> Result<impl warp::Reply, Rejection> {
+    let mut state = state.lock().await;
+    if state.get_schedule(id).unwrap().activity == Activity::Active {
+        let mut scheduler = scheduler.lock().await;
+        scheduler.remove(id).await;
+    }
+    state.remove_schedule(id);
     Ok(StatusCode::OK)
 }
 

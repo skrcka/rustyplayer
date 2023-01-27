@@ -62,6 +62,11 @@ impl Scheduler {
         state.save_schedules();
     } 
 
+    pub async fn reschedule(&mut self, id: u32) {
+        self.remove(id).await;
+        self.add(id).await;
+    }
+
     pub async fn load(&mut self) {
         println!("Loading schedules");
         let schedules = self.state.lock().await.schedules.clone();
