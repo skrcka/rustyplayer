@@ -204,10 +204,8 @@ pub async fn activate(
     id: u32,
     scheduler: SchedulerMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    tokio::spawn(async move {
-        let mut scheduler = scheduler.lock().await;
-        scheduler.add(id).await;
-    });
+    let mut scheduler = scheduler.lock().await;
+    scheduler.add(id).await;
     Ok(StatusCode::OK)
 }
 
@@ -215,9 +213,7 @@ pub async fn deactivate(
     id: u32,
     scheduler: SchedulerMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    tokio::spawn(async move {
-        let mut scheduler = scheduler.lock().await;
-        scheduler.remove(id).await;
-    });
+    let mut scheduler = scheduler.lock().await;
+    scheduler.remove(id).await;
     Ok(StatusCode::OK)
 }
