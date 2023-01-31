@@ -1,13 +1,11 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::utils::load_media_files;
 use crate::utils::load_schedules;
 use crate::utils::write_media_files;
 use crate::utils::write_schedules;
-use crate::consts::MEDIA_PATH;
 
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -70,7 +68,8 @@ impl IdGenerator {
     }
 
     pub fn next(&self) -> u32 {
-        self.id.fetch_add(1, Ordering::SeqCst) as u32
+        self.id.fetch_add(1, Ordering::SeqCst) as u32;
+        self.id.load(Ordering::SeqCst) as u32
     }
 }
 
@@ -118,8 +117,8 @@ impl State {
         self.files.iter().find(|f| f.id == id)
     }
 
-    pub fn add_media(&mut self, name: String) {
-        self.files.push(MediaFile::new(self.file_id_gen.next(), name));
+    pub fn add_media(&mut self, name: String, path: String) {
+        self.files.push(MediaFile::new(self.file_id_gen.next(), name, path));
         self.save_media();
     }
 
@@ -162,12 +161,11 @@ impl State {
 }
 
 impl MediaFile {
-    pub fn new(id: u32, name: String) -> MediaFile {
-        let path = Path::new(MEDIA_PATH).join(&id.to_string()).join(&name);
+    pub fn new(id: u32, name: String, path: String) -> MediaFile {
         MediaFile {
             id: id,
-            path: path.to_string_lossy().to_string(),
             name: name,
+            path: path,
         }
     }
 }

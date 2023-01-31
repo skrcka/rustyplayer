@@ -105,7 +105,10 @@ pub async fn upload_files(
                     return Err(warp::reject::reject());
                 }
             }
-            let file_name = file_name.strip_suffix(file_ending).unwrap();
+            let file_name = file_name
+                                        .strip_suffix(
+                                            format!(".{}", file_ending).as_str()
+                                        ).unwrap();
 
             let value = p
                 .stream()
@@ -119,10 +122,10 @@ pub async fn upload_files(
                     warp::reject::reject()
                 }).unwrap();
 
-            write_file(file_name, file_ending, &value).await;
+            let path = write_file(file_name, file_ending, &value).await;
 
             let mut state = state.lock().await;
-            state.add_media(file_name.to_string());
+            state.add_media(file_name.to_string(), path);
         }
     }
 
