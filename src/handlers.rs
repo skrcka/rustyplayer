@@ -1,16 +1,15 @@
-use std::convert::Infallible;
+use bytes::BufMut;
 use futures::TryStreamExt;
 use hyper::Uri;
+use std::convert::Infallible;
 use warp::multipart::{FormData, Part};
-use warp::{self, http::StatusCode, Rejection, reject::Reject};
-use bytes::BufMut;
+use warp::{self, http::StatusCode, reject::Reject, Rejection};
 
-use crate::models::{Status, Activity, Schedule};
-use crate::{StateMutex, SchedulerMutex};
-use crate::PlayerMutex;
-use crate::utils::write_file;
+use crate::models::{Activity, Schedule, Status};
 use crate::utils::remove_file;
-
+use crate::utils::write_file;
+use crate::PlayerMutex;
+use crate::{SchedulerMutex, StateMutex};
 
 #[derive(Debug)]
 struct InvalidFile;
@@ -49,8 +48,8 @@ pub async fn pause(state: StateMutex, player: PlayerMutex) -> Result<impl warp::
 
 pub async fn play(
     id: u32,
-    state: StateMutex, 
-    player: PlayerMutex
+    state: StateMutex,
+    player: PlayerMutex,
 ) -> Result<impl warp::Reply, Infallible> {
     let mut state = state.lock().await;
     let player = player.lock().await;
@@ -63,10 +62,14 @@ pub async fn upload_files(
     form: FormData,
     state: StateMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    let parts: Vec<Part> = form.try_collect().await.map_err(|e| {
-        eprintln!("form error: {}", e);
-        warp::reject::reject()
-    }).unwrap();
+    let parts: Vec<Part> = form
+        .try_collect()
+        .await
+        .map_err(|e| {
+            eprintln!("form error: {}", e);
+            warp::reject::reject()
+        })
+        .unwrap();
 
     for p in parts {
         if p.name() == "file" {
@@ -99,16 +102,15 @@ pub async fn upload_files(
             match filename {
                 Some(filename) => {
                     file_name = filename.to_string();
-                },
+                }
                 None => {
                     eprintln!("file name could not be determined");
                     return Err(warp::reject::reject());
                 }
             }
             let file_name = file_name
-                                        .strip_suffix(
-                                            format!(".{}", file_ending).as_str()
-                                        ).unwrap();
+                .strip_suffix(format!(".{}", file_ending).as_str())
+                .unwrap();
 
             let value = p
                 .stream()
@@ -120,7 +122,8 @@ pub async fn upload_files(
                 .map_err(|e| {
                     eprintln!("reading file error: {}", e);
                     warp::reject::reject()
-                }).unwrap();
+                })
+                .unwrap();
 
             let path = write_file(file_name, file_ending, &value).await;
 
@@ -142,20 +145,19 @@ pub async fn delete_file(
     let file_locator = state.get_media(id).unwrap().path.clone();
     remove_file(file_locator.as_str()).await;
     state.remove_media(id);
-    let schedules_to_disable = state.schedules.iter()
-                                                .filter(|s| s.file_id == id)
-                                                .filter(|s| s.activity == Activity::Active)
-                                                .collect::<Vec<&Schedule>>();
+    let schedules_to_disable = state
+        .schedules
+        .iter()
+        .filter(|s| s.file_id == id)
+        .filter(|s| s.activity == Activity::Active)
+        .collect::<Vec<&Schedule>>();
     for s in schedules_to_disable.iter() {
         scheduler.remove(s.id).await;
     }
     Ok(StatusCode::OK)
 }
 
-pub async fn download_file(
-    id: u32,
-    state: StateMutex,
-) -> Result<impl warp::Reply, Rejection> {
+pub async fn download_file(id: u32, state: StateMutex) -> Result<impl warp::Reply, Rejection> {
     let state = state.lock().await;
     let file_name = state.get_media(id).unwrap().name.clone();
     println!("redirrecting to download file: {}", file_name);
@@ -203,19 +205,13 @@ pub async fn remove_schedule(
     Ok(StatusCode::OK)
 }
 
-pub async fn activate(
-    id: u32,
-    scheduler: SchedulerMutex,
-) -> Result<impl warp::Reply, Rejection> {
+pub async fn activate(id: u32, scheduler: SchedulerMutex) -> Result<impl warp::Reply, Rejection> {
     let mut scheduler = scheduler.lock().await;
     scheduler.add(id).await;
     Ok(StatusCode::OK)
 }
 
-pub async fn deactivate(
-    id: u32,
-    scheduler: SchedulerMutex,
-) -> Result<impl warp::Reply, Rejection> {
+pub async fn deactivate(id: u32, scheduler: SchedulerMutex) -> Result<impl warp::Reply, Rejection> {
     let mut scheduler = scheduler.lock().await;
     scheduler.remove(id).await;
     Ok(StatusCode::OK)

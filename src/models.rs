@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use uuid::Uuid;
 
 use crate::utils::load_media_files;
 use crate::utils::load_schedules;
 use crate::utils::write_media_files;
 use crate::utils::write_schedules;
-
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MediaFile {
@@ -118,7 +117,8 @@ impl State {
     }
 
     pub fn add_media(&mut self, name: String, path: String) {
-        self.files.push(MediaFile::new(self.file_id_gen.next(), name, path));
+        self.files
+            .push(MediaFile::new(self.file_id_gen.next(), name, path));
         self.save_media();
     }
 
@@ -144,7 +144,7 @@ impl State {
         self.save_schedules();
     }
 
-    pub fn edit_schedule(&mut self, id:u32, file_id: u32, schedule: String) {
+    pub fn edit_schedule(&mut self, id: u32, file_id: u32, schedule: String) {
         let mut sched = self.get_mut_schedule(id).unwrap();
         if file_id == sched.file_id && schedule == sched.schedule {
             return;

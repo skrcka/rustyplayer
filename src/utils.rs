@@ -1,10 +1,9 @@
 use std::path::Path;
 use std::{fs::File, io::BufReader};
 
-use crate::models::{MediaFile, Schedule};
-use crate::consts::RESOURCE_PATH;
 use crate::consts::MEDIA_PATH;
-
+use crate::consts::RESOURCE_PATH;
+use crate::models::{MediaFile, Schedule};
 
 pub fn write_media_files(files: &Vec<MediaFile>) {
     let path = Path::new(RESOURCE_PATH).join("media.json");
@@ -39,12 +38,17 @@ pub fn load_schedules() -> Vec<Schedule> {
 }
 
 pub async fn write_file(file_name: &str, file_ending: &str, data: &Vec<u8>) -> String {
-    let path = Path::new(MEDIA_PATH).join(file_name).with_extension(file_ending);
+    let path = Path::new(MEDIA_PATH)
+        .join(file_name)
+        .with_extension(file_ending);
     println!("writing file {} to: {}", file_name, path.display());
-    tokio::fs::write(&path, data).await.map_err(|e| {
-        eprintln!("error writing file: {}", e);
-        warp::reject::reject()
-    }).unwrap();
+    tokio::fs::write(&path, data)
+        .await
+        .map_err(|e| {
+            eprintln!("error writing file: {}", e);
+            warp::reject::reject()
+        })
+        .unwrap();
     println!("created file: {}", file_name);
     path.to_string_lossy().to_string()
 }
@@ -53,9 +57,12 @@ pub async fn remove_file(file_locator: &str) {
     let path = Path::new(file_locator);
     // delete file
     println!("deleting file: {}", path.display());
-    tokio::fs::remove_file(&path).await.map_err(|e| {
-        eprint!("error deleting file: {}", e);
-        warp::reject::reject()
-    }).unwrap();
+    tokio::fs::remove_file(&path)
+        .await
+        .map_err(|e| {
+            eprint!("error deleting file: {}", e);
+            warp::reject::reject()
+        })
+        .unwrap();
     println!("deleted file: {}", file_locator);
 }

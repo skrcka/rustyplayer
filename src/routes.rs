@@ -1,18 +1,14 @@
+use hyper::StatusCode;
 use std::collections::HashMap;
 use std::convert::Infallible;
-use hyper::StatusCode;
-use warp::{
-    Filter, Rejection, Reply, body, multipart::form,
-    path, get, any, post, 
-};
+use warp::{any, body, get, multipart::form, path, post, Filter, Rejection, Reply};
 
-use crate::StateMutex;
+use crate::consts::MEDIA_PATH;
+use crate::consts::WEB_PATH;
+use crate::handlers;
 use crate::PlayerMutex;
 use crate::SchedulerMutex;
-use crate::handlers;
-use crate::consts::WEB_PATH;
-use crate::consts::MEDIA_PATH;
-
+use crate::StateMutex;
 
 pub fn routes(
     state: StateMutex,
@@ -40,15 +36,13 @@ pub fn routes(
 fn serve_web() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     warp::path::end()
         .and(get())
-        .and(warp::fs::dir(WEB_PATH)
-        .recover(handle_rejection))
+        .and(warp::fs::dir(WEB_PATH).recover(handle_rejection))
 }
 
 fn serve_files() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     path("export")
         .and(get())
-        .and(warp::fs::dir(MEDIA_PATH)
-        .recover(handle_rejection))
+        .and(warp::fs::dir(MEDIA_PATH).recover(handle_rejection))
 }
 
 async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
@@ -77,9 +71,7 @@ fn get_status(
         .and_then(handlers::get_status)
 }
 
-fn get_files(
-    state: StateMutex,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+fn get_files(state: StateMutex) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     path("files")
         .and(get())
         .and(with_state(state))
@@ -215,28 +207,33 @@ fn deactivate(
         .and_then(handlers::deactivate)
 }
 
-fn with_state(state: StateMutex) -> impl Filter<Extract = (StateMutex,), Error = Infallible> + Clone {
+fn with_state(
+    state: StateMutex,
+) -> impl Filter<Extract = (StateMutex,), Error = Infallible> + Clone {
     any().map(move || state.clone())
 }
 
-fn with_scheduler(scheduler: SchedulerMutex) -> impl Filter<Extract = (SchedulerMutex,), Error = Infallible> + Clone {
+fn with_scheduler(
+    scheduler: SchedulerMutex,
+) -> impl Filter<Extract = (SchedulerMutex,), Error = Infallible> + Clone {
     any().map(move || scheduler.clone())
 }
 
-fn with_stream(player: PlayerMutex) -> impl Filter<Extract = (PlayerMutex,), Error = Infallible> + Clone {
+fn with_stream(
+    player: PlayerMutex,
+) -> impl Filter<Extract = (PlayerMutex,), Error = Infallible> + Clone {
     any().map(move || player.clone())
 }
 
 fn with_id() -> impl Filter<Extract = (u32,), Error = Rejection> + Clone {
     warp::query::<HashMap<String, String>>()
-        .map(| query: HashMap<String, String> | {
+        .map(|query: HashMap<String, String>| {
             if let Some(id) = query.get("id") {
                 match id.parse::<u32>() {
                     Ok(id) => Ok(id),
                     Err(_) => Err(warp::reject()),
                 }
-            }
-            else {
+            } else {
                 Err(warp::reject())
             }
         })
@@ -249,11 +246,9 @@ fn with_id() -> impl Filter<Extract = (u32,), Error = Rejection> + Clone {
 }
 
 fn json_schedule() -> impl Filter<Extract = ((u32, String),), Error = Rejection> + Clone {
-    body::content_length_limit(1024 * 16)
-    .and(body::json())
+    body::content_length_limit(1024 * 16).and(body::json())
 }
 
 fn json_edit_schedule() -> impl Filter<Extract = ((u32, u32, String),), Error = Rejection> + Clone {
-    body::content_length_limit(1024 * 16)
-    .and(body::json())
+    body::content_length_limit(1024 * 16).and(body::json())
 }

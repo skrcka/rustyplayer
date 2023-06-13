@@ -1,11 +1,10 @@
-use std::fs::File;
-use std::path::Path;
 use rodio::Decoder;
 use rodio::OutputStreamHandle;
 use rodio::Sink;
+use std::fs::File;
+use std::path::Path;
 
 use crate::models::MediaFile;
-
 
 pub struct Player {
     sink: Sink,
@@ -14,7 +13,7 @@ pub struct Player {
 impl Player {
     pub fn new(stream_handle: &OutputStreamHandle) -> Player {
         Player {
-            sink: Sink::try_new(stream_handle).unwrap()
+            sink: Sink::try_new(stream_handle).unwrap(),
         }
     }
 
