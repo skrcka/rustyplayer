@@ -38,4 +38,14 @@ impl Player {
     pub fn stop(&self) {
         self.sink.stop();
     }
+
+    pub fn done(&self) -> bool {
+        self.sink.empty()
+    }
+
+    pub fn skip(&self, count: Option<u32>) {
+        for _ in 0..count.unwrap_or(1) {
+            self.sink.skip_one();
+        }
+    }
 }

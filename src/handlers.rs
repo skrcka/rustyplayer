@@ -15,8 +15,17 @@ use crate::{SchedulerMutex, StateMutex};
 struct InvalidFile;
 impl Reject for InvalidFile {}
 
-pub async fn get_status(state: StateMutex) -> Result<impl warp::Reply, Infallible> {
-    let state = state.lock().await;
+pub async fn get_status(
+    state: StateMutex,
+    player: PlayerMutex,
+) -> Result<impl warp::Reply, Infallible> {
+    let mut state = state.lock().await;
+    if state.status == Status::Running {
+        let player = player.lock().await;
+        if player.done() {
+            state.status = Status::Idle;
+        }
+    }
     Ok(warp::reply::json(&state.status))
 }
 
@@ -59,20 +68,19 @@ pub async fn play(
 }
 
 pub async fn upload_files(
-    form: FormData,
+    mut form: FormData,
     state: StateMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    let parts: Vec<Part> = form.try_collect().await.map_err(|e| {
-        eprintln!("form error: {}", e);
+    while let Some(field) = form.try_next().await.map_err(|e| {
+        eprintln!("form error during part processing: {}", e);
         warp::reject::reject()
-    })?;
-
-    for p in parts {
+    })? {
+        let p: Part = field;
         if p.name() == "file" {
             let content_type = p.content_type();
             let file_ending = match content_type {
                 Some(file_type) => match file_type {
-                    "audio/mp3" | "audio/mpeg" => "mp3",
+                    "audio/mp3" | "audio/mpeg" | "audio" => "mp3",
                     "audio/ogg" => "ogg",
                     v => {
                         eprintln!("invalid file type found: {}", v);

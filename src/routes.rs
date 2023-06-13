@@ -1,7 +1,8 @@
 use hyper::StatusCode;
 use std::collections::HashMap;
 use std::convert::Infallible;
-use warp::{any, body, get, multipart::form, path, post, Filter, Rejection, Reply};
+use warp::multipart::form;
+use warp::{any, body, get, path, post, Filter, Rejection, Reply};
 
 use crate::consts::MEDIA_PATH;
 use crate::consts::WEB_PATH;
@@ -17,7 +18,7 @@ pub fn routes(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     serve_web()
         .or(serve_files())
-        .or(get_status(state.clone()))
+        .or(get_status(state.clone(), player.clone()))
         .or(get_schedules(state.clone()))
         .or(get_files(state.clone()))
         .or(upload_files(state.clone()))
@@ -64,10 +65,12 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
 
 fn get_status(
     state: StateMutex,
+    player: PlayerMutex,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     path("status")
         .and(get())
         .and(with_state(state))
+        .and(with_stream(player))
         .and_then(handlers::get_status)
 }
 
@@ -92,7 +95,7 @@ fn upload_files(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     path("upload")
         .and(post())
-        .and(form().max_length(5_000_000))
+        .and(form())
         .and(with_state(state))
         .and_then(handlers::upload_files)
 }

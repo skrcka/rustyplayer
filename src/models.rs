@@ -44,7 +44,7 @@ pub struct ActiveSchedule {
     pub job_id: Uuid,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum Status {
     Init,
     Disconnected,
