@@ -62,30 +62,18 @@ pub async fn upload_files(
     form: FormData,
     state: StateMutex,
 ) -> Result<impl warp::Reply, Rejection> {
-    let parts: Vec<Part> = form
-        .try_collect()
-        .await
-        .map_err(|e| {
-            eprintln!("form error: {}", e);
-            warp::reject::reject()
-        })
-        .unwrap();
+    let parts: Vec<Part> = form.try_collect().await.map_err(|e| {
+        eprintln!("form error: {}", e);
+        warp::reject::reject()
+    })?;
 
     for p in parts {
         if p.name() == "file" {
             let content_type = p.content_type();
-            let file_ending;
-            match content_type {
+            let file_ending = match content_type {
                 Some(file_type) => match file_type {
-                    "audio/mp3" => {
-                        file_ending = "mp3";
-                    }
-                    "audio/ogg" => {
-                        file_ending = "ogg";
-                    }
-                    "audio/mpeg" => {
-                        file_ending = "mp3";
-                    }
+                    "audio/mp3" | "audio/mpeg" => "mp3",
+                    "audio/ogg" => "ogg",
                     v => {
                         eprintln!("invalid file type found: {}", v);
                         return Err(warp::reject::reject());
@@ -95,22 +83,22 @@ pub async fn upload_files(
                     eprintln!("file type could not be determined");
                     return Err(warp::reject::reject());
                 }
-            }
+            };
 
-            let filename = p.filename();
-            let file_name;
-            match filename {
-                Some(filename) => {
-                    file_name = filename.to_string();
-                }
+            let file_name = match p.filename() {
+                Some(filename) => filename.to_string(),
                 None => {
                     eprintln!("file name could not be determined");
                     return Err(warp::reject::reject());
                 }
-            }
+            };
+
             let file_name = file_name
                 .strip_suffix(format!(".{}", file_ending).as_str())
-                .unwrap();
+                .ok_or_else(|| {
+                    eprintln!("failed to strip file extension");
+                    warp::reject::reject()
+                })?;
 
             let value = p
                 .stream()
@@ -122,8 +110,7 @@ pub async fn upload_files(
                 .map_err(|e| {
                     eprintln!("reading file error: {}", e);
                     warp::reject::reject()
-                })
-                .unwrap();
+                })?;
 
             let path = write_file(file_name, file_ending, &value).await;
 

@@ -25,12 +25,12 @@ pub fn routes(
         .or(download_file(state.clone()))
         .or(stop(state.clone(), player.clone()))
         .or(play(state.clone(), player.clone()))
-        .or(pause(state.clone(), player.clone()))
+        .or(pause(state.clone(), player))
         .or(add_schedule(state.clone()))
         .or(edit_schedule(state.clone(), scheduler.clone()))
-        .or(remove_schedule(state.clone(), scheduler.clone()))
+        .or(remove_schedule(state, scheduler.clone()))
         .or(activate(scheduler.clone()))
-        .or(deactivate(scheduler.clone()))
+        .or(deactivate(scheduler))
 }
 
 fn serve_web() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {

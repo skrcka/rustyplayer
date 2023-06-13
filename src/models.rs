@@ -67,7 +67,7 @@ impl IdGenerator {
     }
 
     pub fn next(&self) -> u32 {
-        self.id.fetch_add(1, Ordering::SeqCst) as u32;
+        self.id.fetch_add(1, Ordering::SeqCst);
         self.id.load(Ordering::SeqCst) as u32
     }
 }
@@ -81,8 +81,8 @@ pub struct State {
     pub schedule_id_gen: IdGenerator,
 }
 
-impl State {
-    pub fn new() -> State {
+impl Default for State {
+    fn default() -> Self {
         State {
             files: vec![],
             schedules: vec![],
@@ -91,15 +91,17 @@ impl State {
             schedule_id_gen: IdGenerator::new(0),
         }
     }
+}
 
+impl State {
     pub fn load() -> State {
         let files = load_media_files();
         let schedules = load_schedules();
         State {
             file_id_gen: IdGenerator::new(files.iter().map(|f| f.id).max().unwrap_or(0)),
             schedule_id_gen: IdGenerator::new(schedules.iter().map(|s| s.id).max().unwrap_or(0)),
-            files: files,
-            schedules: schedules,
+            files,
+            schedules,
             status: Status::Idle,
         }
     }
@@ -162,10 +164,6 @@ impl State {
 
 impl MediaFile {
     pub fn new(id: u32, name: String, path: String) -> MediaFile {
-        MediaFile {
-            id: id,
-            name: name,
-            path: path,
-        }
+        MediaFile { id, name, path }
     }
 }
