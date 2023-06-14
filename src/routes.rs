@@ -26,7 +26,8 @@ pub fn routes(
         .or(download_file(state.clone()))
         .or(stop(state.clone(), player.clone()))
         .or(play(state.clone(), player.clone()))
-        .or(pause(state.clone(), player))
+        .or(pause(state.clone(), player.clone()))
+        .or(resume(state.clone(), player))
         .or(add_schedule(state.clone()))
         .or(edit_schedule(state.clone(), scheduler.clone()))
         .or(remove_schedule(state, scheduler.clone()))
@@ -131,6 +132,17 @@ fn pause(
         .and(with_state(state))
         .and(with_stream(player))
         .and_then(handlers::pause)
+}
+
+fn resume(
+    state: StateMutex,
+    player: PlayerMutex,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    path("resume")
+        .and(get())
+        .and(with_state(state))
+        .and(with_stream(player))
+        .and_then(handlers::resume)
 }
 
 fn stop(
